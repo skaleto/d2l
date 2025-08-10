@@ -2,15 +2,22 @@ import torch
 from torch import nn
 from d2l import torch as d2l
 
+# gamma, beta: 可以学的两个参数
+# moving_mean, moving_var: 全局的均值和方差（指数移动平均）
+# eps: 防止除0的小参数
+# momentum: 用来更新moving_mean和moving_var的参数
 def batch_norm(X, gamma, beta, moving_mean, moving_var, eps, momentum):
     # 通过is_grad_enabled来判断当前模式是训练模式还是预测模式
     if not torch.is_grad_enabled():
-        # 如果是在预测模式下，直接使用传入的移动平均所得的均值和方差
+        # 如果是在预测模式下，直接使用传入的移动平均所得的均值和方差（因为此时可能只有一条输入数据，没有批量的概念）
         X_hat = (X - moving_mean) / torch.sqrt(moving_var + eps)
     else:
+        # 二维的层表示只有两个维度，也就是样本和特征
+        # 四维的表示有batch_size、通道数、图像高、图像宽
         assert len(X.shape) in (2, 4)
         if len(X.shape) == 2:
             # 使用全连接层的情况，计算特征维上的均值和方差
+            # 对每一列特征做mean，也就是沿着行求均值
             mean = X.mean(dim=0)
             var = ((X - mean) ** 2).mean(dim=0)
         else:
